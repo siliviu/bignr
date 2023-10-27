@@ -1,7 +1,7 @@
-#include <iostream>
-#include <iomanip>
-#include <vector>
-#include <cstring>
+#include <bits/stdc++.h>
+
+using namespace std;
+
 
 template<int LMAX, unsigned NGR = 1, class U = unsigned, unsigned GR = 10>
 struct bignr {
@@ -21,9 +21,9 @@ public:
 	bignr() : Length(1) {
 		memset(Number, 0, sizeof(Number));
 	}
-	friend std::istream& operator >> (std::istream& is, bignr<LMAX, NGR, U, GR>& a) {
+	friend istream& operator >> (istream& is, bignr<LMAX, NGR, U, GR>& a) {
 		memset(a.Number, 0, sizeof(a.Number));
-		std::string nr;
+		string nr;
 		is >> nr;
 		a.Length = nr.length() / NGR;
 		int i = a.Length - 1, j = 0;
@@ -35,10 +35,10 @@ public:
 		if (nr.length() % NGR) a.Length++;
 		return is;
 	}
-	friend std::ostream& operator << (std::ostream& os, const bignr<LMAX, NGR, U, GR>& a) {
+	friend ostream& operator << (ostream& os, const bignr<LMAX, NGR, U, GR>& a) {
 		os << a.Number[a.Length - 1];
 		for (int i = a.Length - 2; i >= 0; --i)
-			os << std::setw(NGR) << std::setfill('0') << a.Number[i];
+			os << setw(NGR) << setfill('0') << a.Number[i];
 		return os;
 	}
 	bignr& operator <<= (int x) {
@@ -88,7 +88,7 @@ public:
 			}
 		return FixRedundantZero();
 	}
-	template<typename T, typename = typename std::enable_if<!std::is_base_of<bignr, T>::value>::type>
+	template<typename T, typename = typename enable_if<!is_base_of<bignr, T>::value>::type>
 	bignr& operator *= (const T& nr2) {
 		if (*this == 0 || nr2 == 0)
 			return (*this = 0);
@@ -107,7 +107,7 @@ public:
 			return (*this = 0);
 		if (Length == 1) {
 			bignr temp = nr2;
-			std::swap(*this, temp);
+			swap(*this, temp);
 			return *this *= temp.Number[0];
 		}
 		if (nr2.Length == 1)
@@ -124,7 +124,7 @@ public:
 			++result.Length;
 		return *this = result;
 	}
-	template<typename T, typename = typename std::enable_if<!std::is_base_of<bignr, T>::value>::type>
+	template<typename T, typename = typename enable_if<!is_base_of<bignr, T>::value>::type>
 	bignr& operator /= (const T& nr2) {
 		U r = 0;
 		for (int i = Length - 1; i >= 0; --i) {
@@ -171,7 +171,7 @@ public:
 			}
 		}
 		int expl = (Length - 1) / k;
-		std::vector<bignr> b(k + 1), bans(k + 1), bnew(k + 1);
+		vector<bignr> b(k + 1), bans(k + 1), bnew(k + 1);
 		b[0] = bnew[0] = 1;
 		for (int i = expl; i >= 0; --i) {
 			U left = 0, right = GR - 1;
@@ -198,14 +198,14 @@ public:
 	bignr multiply(bignr nr2) {
 		bignr& nr1 = *this;
 		int l1 = nr1.Length, l2 = nr2.Length;
-		if (l1 == 1 || l2 == 1)
+		if (l1 <= 1000 || l2 <= 1000)
 			return nr1 * nr2;
-		int h = std::max(l1 / 2, l2 / 2);
+		int h = max(l1 / 2, l2 / 2);
 		bignr a = nr1 >> h, b = nr1 - (a << h), c = nr2 >> h, d = nr2 - (c << h);
 		bignr ac = a.multiply(c), bd = b.multiply(d), e = (a + b).multiply(c + d);
 		return (ac << (2 * h)) + ((e - ac - bd) << h) + bd;
 	}
-	template<typename T, typename = typename std::enable_if<!std::is_base_of<bignr, T>::value>::type>
+	template<typename T, typename = typename enable_if<!is_base_of<bignr, T>::value>::type>
 	bignr& operator %= (const T& nr2) {
 		U r = 0;
 		for (int i = Length - 1; i >= 0; --i)
@@ -293,11 +293,134 @@ private:
 	}
 };
 
-#include <iostream>
+struct big_int : bignr<335, 9, unsigned long long, 1000000000> {
+	int sign = 1;
+	big_int() {}
+	big_int(int v) : bignr(v > 0 ? v : -v), sign(v >= 0 ? 1 : -1) {}
+	big_int(string s) {
+		stringstream a;
+		a << s;
+		a >> (*this);
+	}
+	operator string() const {
+		stringstream a;
+		a << *this;
+		return a.str();
+	}
+	big_int abs() const {
+		big_int ans = *this;
+		ans.sign = 1;
+		return ans;
+	}
+	using bignr::operator-;
+	big_int operator - () const {
+		big_int ans = *this;
+		ans.sign *= -1;
+		return ans;
+	}
+	big_int operator + (const big_int& b) const {
+		big_int ans;
+		bignr ans_;
+		if (sign == b.sign) {
+			ans_ = (*(bignr*)this + *(bignr*)&b);
+			ans = *(big_int*)&ans_, ans.sign = sign;
+		}
+		else {
+			if (sign == 1)
+				ans = *this - (-b);
+			else
+				ans = b - (-*this);
+		}
+		return ans;
+	}
+	big_int operator - (const big_int& b) const {
+		big_int ans;
+		bignr ans_;
+		if (sign != b.sign) {
+			if (sign == 1)
+				ans = *this + (-b);
+			else
+				ans = -((-*this) + b);
+		}
+		else
+			if (sign == 1)
+				if ((*(bignr*)this < *(bignr*)&b)) {
+					ans_ = (*(bignr*)&b - *(bignr*)this);
+					ans = *(big_int*)&ans_, ans.sign = -1;
+				}
+				else {
+					ans_ = (*(bignr*)this - *(bignr*)&b);
+					ans = *(big_int*)&ans_, ans.sign = 1;
+				}
+			else
+				ans = (-b) - (-*this);
+		return ans;
+	}
+	big_int operator * (const big_int& b) const {
+		if (*this == bignr(0))
+			return big_int(0);
+		big_int ans;
+		bignr ans_;
+		ans_ = (*(bignr*)this * *(bignr*)&b);
+		ans = *(big_int*)&ans_;
+		ans.sign = sign * b.sign;
+		return ans;
+	}
+	big_int operator / (const big_int& b) const {
+		if (*this == bignr(0))
+			return big_int(0);
+		big_int ans;
+		bignr ans_;
+		ans_ = (*(bignr*)this / *(bignr*)&b);
+		ans = *(big_int*)&ans_;
+		if (ans == bignr(0))
+			return big_int(0);
+		ans.sign = sign * b.sign;
+		return ans;
+	}
+	big_int operator % (const big_int& b) const {
+		big_int ans;
+		bignr ans_;
+		ans_ = (*(bignr*)this % *(bignr*)&b);
+		ans = *(big_int*)&ans_;
+		ans.sign = 1;
+		return ans;
+	}
+	friend bool operator < (const big_int& a, const big_int& b) {
+		if (a.sign != b.sign)
+			return a.sign < b.sign;
+		return a.sign == 1 ? (*(bignr*)&a < *(bignr*)&b) : (*(bignr*)&a > *(bignr*)&b);
+	}
+	friend bool operator == (const big_int& a, const big_int& b) {
+		if (a.sign != b.sign)
+			return a.sign == b.sign;
+		return (*(bignr*)&a == *(bignr*)&b);
+	}
+	friend ostream& operator << (ostream& os, const big_int& a) {
+		if (a.sign == -1)
+			os << '-';
+		os << (*(bignr*)&a);
+		return os;
+	}
+	friend istream& operator >> (istream& is, big_int& a) {
+		string s;
+		stringstream temp;
+		is >> s;
+		if (s[0] == '-') {
+			s = s.substr(1);
+			temp << s;
+			temp >> (*(bignr*)&a), a.sign = -1;
+		}
+		else {
+			temp << s;
+			temp >> (*(bignr*)&a), a.sign = 1;
+		}
+		return is;
+	}
+};
 
 int main() {
-	bignr<890, 9, unsigned long long, 1000000000u> a, b;
-	std::cin >> a >> b;
-	std::cout << a * b << std::endl;
-	std::cout << a.multiply(b) << std::endl;
+	bignr<44450, 9, unsigned long long, 1000000000u> a, b;
+	cin >> a >> b;
+	cout << a.multiply(b) << endl;
 }
